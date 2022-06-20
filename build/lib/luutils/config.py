@@ -73,7 +73,7 @@ chain_info = {
         "expoler": "https://optimistic.etherscan.io"
     },
     "cube": {
-        "http_provider": "https://http.cube.network",
+        "http_provider": "https://http-mainnet.cube.network",
         "chain_id": 1818,
         "desc": "Cube主网",
         "expoler": "https://cubescan.network"

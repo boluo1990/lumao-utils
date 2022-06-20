@@ -9,4 +9,5 @@ luutils/__init__.py
 luutils/config.py
 luutils/lucaptcha.py
 luutils/luencryption.py
+luutils/luproxy.py
 luutils/luweb3.py
