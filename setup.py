@@ -14,6 +14,14 @@ _config = {
         "Operating System :: Independent",
     ],
     "python_requires": ">=3.7",
+    "install_requires": [
+        "web3==5.28.0",
+        "termcolor==1.1.0",
+        "eth-account==0.5.7",
+        "eth-abi==2.1.1",
+        "cryptography==36.0.2",
+        "requests==2.25.1"
+    ]
 }
 
 
