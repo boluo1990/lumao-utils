@@ -71,7 +71,7 @@ class Luweb3(Web3):
             print(colored(f'交易确认中, hash: {txn_hash.hex()}', "blue"))
             txn_detail = self.w3.eth.wait_for_transaction_receipt(txn_hash, timeout=timeout, poll_latency=poll_latency)
             print(colored(f'交易已确认, hash: {txn_hash.hex()}, 状态: {txn_detail["status"]}', "green"))
-            return txn_detail["status"], tx_data["nonce"], txn_detail["logs"]
+            return txn_detail["status"], tx_data["nonce"], txn_detail
         
     def send_erc20_token(self, address, private_key, receiver, token_address, amount, gas_option={}, nonce=0):
         input_data = f"0xa9059cbb%064x%064x" % (int(receiver, 16), amount)
@@ -96,6 +96,18 @@ class Luweb3(Web3):
         args_types = ['address']
         args = [address]
         return self.read_raw_contract_function(token_address, func_text, args_types, args)
+
+    def get_estimate_gas(self, trx):
+        return self.w3.eth.estimate_gas(trx)
+
+    def get_block_number(self):
+        return self.w3.eth.get_block_number()
+
+    def get_block(self, block_number="latest"):
+        return self.w3.eth.get_block(block_number)
+
+    def construct_contract(self, contract_addr, contract_abi):
+        return self.w3.eth.contract(address=contract_addr, abi=contract_abi)
 
     # def write_contract(self):
     #     pass
