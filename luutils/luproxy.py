@@ -14,6 +14,17 @@ class MyThread(threading.Thread):
     def get_result(self):
         return self.res
 
+def get_real_ip(proxies):
+    url = 'https://ifconfig.me/ip'
+    try:
+        response = requests.request('GET', url, proxies=proxies, timeout=5)
+        proxy_ip = response.text
+    except Exception as e:
+        print(colored(f"请求真实IP失败, 报错: {str(e)}", "red"))
+        return ""
+    else:
+        return proxy_ip
+
 class Luproxy(object):
     def __init__(self, token) -> None:
         self.token = token
@@ -36,16 +47,7 @@ class Luproxy(object):
             else:
                 return True, resp_data
 
-    def __get_real_ip(proxies):
-        url = 'https://ifconfig.me/ip'
-        try:
-            response = requests.request('GET', url, proxies=proxies, timeout=5)
-            proxy_ip = response.text
-        except Exception as e:
-            print(colored(f"请求真实IP失败, 报错: {str(e)}", "red"))
-            return ""
-        else:
-            return proxy_ip
+
 
     def add_whitelist(self, local_ip, remark=""):
         url = f"http://api.rola-ip.co/user_add_whitelist?token={self.token}&remark={remark}&ip={local_ip}"
@@ -73,7 +75,7 @@ class Luproxy(object):
                 'http': f'http://{proxy_data[i]}',
                 'https': f'http://{proxy_data[i]}'
             }
-            t = MyThread(self.__get_real_ip, (proxies,))
+            t = MyThread(get_real_ip, (proxies,))
             threads.append(t)
 
         for i in range(0, len(proxy_data)):
