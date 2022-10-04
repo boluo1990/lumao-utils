@@ -1,6 +1,7 @@
 import time
 from termcolor import colored
 from web3 import Web3, HTTPProvider, exceptions
+from web3.auto import w3 as _w3
 from eth_abi import encode_abi
 from eth_account.messages import encode_defunct
 from . import config
@@ -28,6 +29,22 @@ class Luweb3(Web3):
     def encode_function(func_text):
         return Web3.keccak(text=func_text)[0:4].hex()
 
+    @staticmethod
+    def encode_input_hex(_type, _value):
+        if _type == "uint256":
+            return "%064x" % _value
+        elif _type == "address":
+            return "%064x" % int(_value, 16)
+        else:
+            return _value
+
+    @staticmethod
+    def sign_msg(private_key, msg_text):
+        message = encode_defunct(text=msg_text)
+        signed_message = _w3.eth.account.sign_message(message, private_key=private_key)
+        signature = signed_message["signature"].hex()
+        return signature
+
     def get_gas_price(self):
         return self.w3.eth.gas_price
 
@@ -43,12 +60,6 @@ class Luweb3(Web3):
 
     def get_nonce(self, address, estimate_nonce=0):
         return max(self.w3.eth.get_transaction_count(address), estimate_nonce)
-
-    def sign_msg(self, private_key, msg_text):
-        message = encode_defunct(text=msg_text)
-        signed_message = self.w3.eth.account.sign_message(message, private_key=private_key)
-        signature = signed_message["signature"].hex()
-        return signature
 
     # 获取原生代币数量
     def get_eth_balance(self, address):
@@ -95,7 +106,10 @@ class Luweb3(Web3):
     # 构造 input_data 发送交易
     def send_raw_transaction(
         self, address, private_key, to_address, nonce, gas_option={}, input_data="0x",
-        value=0, gas_limit=6000000, is_async=False, timeout=300, poll_latency=0.5):
+        tx_type=1, value=0, gas_limit=None, is_async=False, timeout=300, poll_latency=0.5):
+        if gas_limit is None:
+            gas_limit = self.get_estimate_gas(address, to_address, value, input_data)
+
         tx_data = {
             'from': address,
             'to': to_address,
@@ -105,7 +119,11 @@ class Luweb3(Web3):
             'chainId': self.chain_id
         }
         if not bool(gas_option):
-            gas_option = self.w3.eth.gasPrice
+            if tx_type == 1:
+                tx_data["gasPrice"] = self.w3.eth.gas_price
+            else:
+                tx_data["maxFeePerGas"] = self.get_1559_base_fee() + self.get_max_priority_fee()
+                tx_data["maxPriorityFeePerGas"] = self.get_max_priority_fee()
         else:
             for k in gas_option:
                 tx_data[k] = gas_option[k]
@@ -125,10 +143,30 @@ class Luweb3(Web3):
             else:
                 print(colored(f'交易已确认, hash: {txn_hash.hex()}, 状态: {txn_detail["status"]}', "green"))
                 return txn_detail["status"], tx_data["nonce"], txn_detail
-        
-    def send_erc20_token(self, address, private_key, receiver, token_address, amount, gas_option={}, nonce=0):
+
+    # 授权ERC-20代币
+    def approve_erc20_token(
+        self, address, private_key, spender_addr, token_addr,
+        limit=int("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16),
+        gas_option={}, tx_type=1, gas_limit=None, nonce=0, is_async=False
+        ):
+        input_data = f"0x095ea7b3{Luweb3.encode_input_hex('address', spender_addr)}{limit}"
+        return self.send_raw_transaction(address, private_key, token_addr, nonce, gas_option=gas_option, gas_limit=gas_limit, input_data=input_data, tx_type=tx_type, is_async=is_async)
+
+    # 发送ERC-20代币    
+    def send_erc20_token(
+        self, address, private_key, receiver, token_address, amount,
+        gas_option={}, tx_type=1, gas_limit=None, nonce=0, is_async=False
+        ):
         input_data = f"0xa9059cbb%064x%064x" % (int(receiver, 16), amount)
-        return self.send_raw_transaction(address, private_key, token_address, nonce, gas_option=gas_option, input_data=input_data)
+        return self.send_raw_transaction(address, private_key, token_address, nonce, gas_option=gas_option, gas_limit=gas_limit, input_data=input_data, tx_type=tx_type, is_async=is_async)
+
+    # 获取已授权ERC20代币数量
+    def get_erc20_allowance(self, address, spender, token_address):
+        func_text = "allowance(address,address)"
+        arg_types = ["address", "address"]
+        args = [address, spender]
+        return int(self.read_raw_contract_function(token_address, func_text, arg_types, args), 16)
 
     # 没有abi情况下读取合约数据
     def read_raw_contract_function(self, contract_addr, func_text, args_types=None, args=None):
@@ -148,10 +186,16 @@ class Luweb3(Web3):
         func_text = 'balanceOf(address)'
         args_types = ['address']
         args = [address]
-        return self.read_raw_contract_function(token_address, func_text, args_types, args)
+        return int(self.read_raw_contract_function(token_address, func_text, args_types, args), 16)
 
-    def get_estimate_gas(self, trx):
-        return self.w3.eth.estimate_gas(trx)
+    # 获取预期gas_limit
+    def get_estimate_gas(self, address, to_address, value=0, data="0x"):
+        return self.w3.eth.estimate_gas({
+            "from": address,
+            "to": to_address,
+            "value": value,
+            "data": data
+        })
 
     def get_block_number(self):
         return self.w3.eth.get_block_number()
@@ -161,6 +205,11 @@ class Luweb3(Web3):
 
     def construct_contract(self, contract_addr, contract_abi):
         return self.w3.eth.contract(address=contract_addr, abi=contract_abi)
+
+    def sign_send_transaction(self, pk, txn_dict):
+        signed_txn = self.w3.eth.account.signTransaction(txn_dict, pk)
+        txn_hash = self.w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        return txn_hash
 
     # # 写方法
     # def write_contract(self, func_name, *args):

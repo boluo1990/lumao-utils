@@ -4,6 +4,7 @@ import json
 import requests
 from termcolor import colored
 from datetime import datetime
+from .luweb3 import Luweb3
 
 def gee_callback():
     now = datetime.now()
@@ -100,13 +101,35 @@ class Lugalaxy(object):
         })
         status, data = query_galaxy(payload, timeout=timeout, authorization=authorization)
         if not status:
-            print(colored(f"获取活动信息失败, 报错: {data}", "red"))
+            print(colored(f"获取用户信息失败, 报错: {data}", "red"))
             return False, {}
         else:
             address_info = data.get('addressInfo', {})
             print(colored("获取用户信息成功", "green"))
             return True, address_info
 
+    @staticmethod
+    def address_info(addr, pk, timeout=30, authorization='null'):
+        signature = Luweb3.sign_msg(pk, "Please sign to check or edit account info.")
+        payload = json.dumps({
+            "operationName": "AddressInfo",
+            "variables": {
+                "address": addr,
+                "listSpaceInput": {
+                    "first": 30
+                },
+                "sig": signature
+            },
+            "query": "query AddressInfo($address: String!, $sig: String!, $listSpaceInput: ListSpaceInput!) {\n  addressInfo(address: $address) {\n    id\n    address\n    solanaAddress\n    hasEmail\n    avatar\n    username\n    hasTwitter\n    hasGithub\n    hasDiscord\n    isWhitelisted\n    email\n    twitterUserID\n    twitterUserName\n    githubUserID\n    isVerifiedTwitterOauth2\n    githubUserName\n    discordUserID\n    discordUserName\n    spaces(input: $listSpaceInput) {\n      list {\n        ...SpaceBasicFrag\n        __typename\n      }\n      __typename\n    }\n    private(sig: $sig) {\n      email\n      twitterUserName\n      twitterUserID\n      discordUserID\n      discordUserName\n      githubUserID\n      githubUserName\n      accessToken\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment SpaceBasicFrag on Space {\n  id\n  name\n  info\n  thumbnail\n  alias\n  links\n  isVerified\n  __typename\n}\n"
+        })
+        status, data = query_galaxy(payload, timeout=timeout, authorization=authorization)
+        if not status:
+            print(colored(f"获取地址信息失败, 报错: {data}", "red"))
+            return False, {}
+        else:
+            address_info = data.get('addressInfo', {})
+            print(colored("获取地址信息成功", "green"))
+            return True, address_info
     @staticmethod
     def claimable_campaigns(addr, timeout=30, authorization='null'):
         status, address_info = Lugalaxy.basic_user_info(addr, timeout, authorization)

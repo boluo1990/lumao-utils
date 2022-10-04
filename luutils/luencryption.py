@@ -21,7 +21,7 @@ class Luencryption:
             encrypted_bytes = self.fernet.encrypt(to_encrypt_bytes)
             return self.to_string(encrypted_bytes)
         else:
-            print(f"传参错误, 参数类型必须为string, 实际为: {type(to_encrypt_bytes)}")
+            print(f"传参错误, 参数类型必须为string, 实际为: {type(to_encrypt_string)}")
 
     def decrypt(self, to_decrypt_string):
         if isinstance(to_decrypt_string, str):
