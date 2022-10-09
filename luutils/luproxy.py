@@ -29,10 +29,20 @@ class Luproxy(object):
     def __init__(self, token) -> None:
         self.token = token
 
-    def __get_proxy_ips(self, country="", qty=10, is_idc=True):
+    def get_proxy_ips(self, country="", qty=10, is_idc=True):
+        """获取代理IP, 不做验证和真实IP校验
+
+        Args:
+            country (str, optional): 获取代理的国家代号(例如 jp / sg / hk). Defaults to "".
+            qty (int, optional): 一次获取代理的数量. Defaults to 10.
+            is_idc (bool, optional): 是否idc地址. Defaults to True.
+
+        Returns:
+            _type_: 是否正常返回(bool), 返回的IP列表(list)
+        """
         url = f'http://list.rola.info:8088/user_get_ip_list?token={self.token}&qty={qty}&country={country}&state=&city=&time=5&format=json&protocol=http&filter=1'
         if is_idc:
-            url = f"{url}&&type=datacenter"
+            url = f"{url}&type=datacenter"
 
         try:
             response = requests.request('GET', url, timeout=5)
@@ -47,9 +57,13 @@ class Luproxy(object):
             else:
                 return True, resp_data
 
-
-
     def add_whitelist(self, local_ip, remark=""):
+        """添加IP白名单
+
+        Args:
+            local_ip (_type_): 需要添加的IP地址
+            remark (str, optional): 备注. Defaults to "".
+        """
         url = f"http://api.rola-ip.co/user_add_whitelist?token={self.token}&remark={remark}&ip={local_ip}"
         try:
             response = requests.request('GET', url, timeout=5)
@@ -64,7 +78,16 @@ class Luproxy(object):
                 print(colored(f"添加白名单成功, 消息: {resp_msg}", "green"))
 
     def fetch_ok_proxy(self, country="", qty=10):
-        ok, proxy_data = self.__get_proxy_ips(country=country, qty=qty)
+        """获取可用代理IP列表
+
+        Args:
+            country (str, optional): 获取代理的国家代号(例如 jp / sg / hk). Defaults to "".
+            qty (int, optional): 一次获取代理的数量. Defaults to 10.
+
+        Returns:
+            _type_: 是否正常返回(bool), 返回的IP列表(list), 返回IP对应真实出口IP列表(list)
+        """
+        ok, proxy_data = self.get_proxy_ips(country=country, qty=qty)
         if not ok:
             return False, [], []
 
