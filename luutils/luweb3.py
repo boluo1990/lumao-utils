@@ -150,7 +150,7 @@ class Luweb3(Web3):
         limit=int("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16),
         gas_option={}, tx_type=1, gas_limit=None, nonce=0, is_async=False
         ):
-        input_data = f"0x095ea7b3{Luweb3.encode_input_hex('address', spender_addr)}{limit}"
+        input_data = f"0x095ea7b3{Luweb3.encode_input_hex('address', spender_addr)}{Luweb3.encode_input_hex('uint256', limit)}"
         return self.send_raw_transaction(address, private_key, token_addr, nonce, gas_option=gas_option, gas_limit=gas_limit, input_data=input_data, tx_type=tx_type, is_async=is_async)
 
     # 发送ERC-20代币    
@@ -206,10 +206,22 @@ class Luweb3(Web3):
     def construct_contract(self, contract_addr, contract_abi):
         return self.w3.eth.contract(address=contract_addr, abi=contract_abi)
 
-    def sign_send_transaction(self, pk, txn_dict):
-        signed_txn = self.w3.eth.account.signTransaction(txn_dict, pk)
-        txn_hash = self.w3.eth.sendRawTransaction(signed_txn.rawTransaction)
-        return txn_hash
+    def sign_send_transaction(self, pk, txn_dict, is_async=False, timeout=300, poll_latency=0.5):
+        signed_txn = self.w3.eth.account.sign_transaction(txn_dict, pk)
+        txn_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        if is_async:
+            print(colored(f'交易已提交, hash: {txn_hash.hex()}', "blue"))
+            return 0, txn_dict["nonce"], {}
+        else:
+            print(colored(f'交易确认中, hash: {txn_hash.hex()}', "blue"))
+            # status, txn_detail = self.__check_transaction(txn_hash, poll_latency, timeout)
+            try:
+                txn_detail = self.w3.eth.wait_for_transaction_receipt(txn_hash, timeout=timeout, poll_latency=poll_latency)
+            except exceptions.BadResponseFormat:
+                time.sleep(poll_latency)
+            else:
+                print(colored(f'交易已确认, hash: {txn_hash.hex()}, 状态: {txn_detail["status"]}', "green"))
+                return txn_detail["status"], txn_dict["nonce"], txn_detail
 
     # # 写方法
     # def write_contract(self, func_name, *args):
