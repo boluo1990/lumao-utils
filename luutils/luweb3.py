@@ -148,10 +148,18 @@ class Luweb3(Web3):
     def approve_erc20_token(
         self, address, private_key, spender_addr, token_addr,
         limit=int("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16),
-        gas_option={}, tx_type=1, gas_limit=None, nonce=0, is_async=False
+        gas_option={}, tx_type=1, gas_limit=None, nonce=0, is_async=False, check_allowance=False
         ):
-        input_data = f"0x095ea7b3{Luweb3.encode_input_hex('address', spender_addr)}{Luweb3.encode_input_hex('uint256', limit)}"
-        return self.send_raw_transaction(address, private_key, token_addr, nonce, gas_option=gas_option, gas_limit=gas_limit, input_data=input_data, tx_type=tx_type, is_async=is_async)
+        execute = True
+        if check_allowance:
+            allowance = self.get_erc20_allowance(address, spender_addr, token_addr)
+            if allowance >= limit:
+                execute = False
+                return 1, nonce - 1, {}
+
+        if execute:
+            input_data = f"0x095ea7b3{Luweb3.encode_input_hex('address', spender_addr)}{Luweb3.encode_input_hex('uint256', limit)}"
+            return self.send_raw_transaction(address, private_key, token_addr, nonce, gas_option=gas_option, gas_limit=gas_limit, input_data=input_data, tx_type=tx_type, is_async=is_async)
 
     # 发送ERC-20代币    
     def send_erc20_token(

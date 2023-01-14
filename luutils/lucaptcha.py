@@ -95,5 +95,6 @@ class Lucaptcha(object):
                 except Exception as e:
                     print(colored(f"解析任务失败, 报错: {response.text()}", "red"))
                     return False, ""
+            return False, ""
         else:
             return False, ""
