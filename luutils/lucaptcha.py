@@ -64,7 +64,7 @@ class Lucaptcha(object):
             print(colored(f"获取账户余额失败, 报错: {response.text()}", "red"))
             return False, ""
 
-    def anycaptcha_solver(self):
+    def anycaptcha_solver(self, retries=20):
         url = "https://api.anycaptcha.com/getTaskResult"
 
         ok, task_id = self.__anycaptcha_create()
@@ -72,7 +72,7 @@ class Lucaptcha(object):
         if ok:
             print(colored(f"开始创建任务ID: {task_id}", "cyan"))
             while True:
-                if delay >= 60:
+                if delay >= 20:
                     print(colored(f"解析任务超时", "red"))
                     break
                 try:
