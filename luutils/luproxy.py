@@ -95,8 +95,8 @@ class Luproxy(object):
         results = []
         for i in range(0, len(proxy_data)):
             proxies = {
-                'http': f'http://{proxy_data[i]}',
-                'https': f'http://{proxy_data[i]}'
+                'http': f'{protocol}://{proxy_data[i]}',
+                'https': f'{protocol}://{proxy_data[i]}'
             }
             t = MyThread(get_real_ip, (proxies,))
             threads.append(t)
