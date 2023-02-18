@@ -29,7 +29,7 @@ class Luproxy(object):
     def __init__(self, token) -> None:
         self.token = token
 
-    def get_proxy_ips(self, country="", qty=10, is_idc=True):
+    def get_proxy_ips(self, country="", protocol="http", qty=10, is_idc=True):
         """获取代理IP, 不做验证和真实IP校验
 
         Args:
@@ -40,7 +40,7 @@ class Luproxy(object):
         Returns:
             _type_: 是否正常返回(bool), 返回的IP列表(list)
         """
-        url = f'http://list.rola.info:8088/user_get_ip_list?token={self.token}&qty={qty}&country={country}&state=&city=&time=5&format=json&protocol=http&filter=1'
+        url = f'http://list.rola.info:8088/user_get_ip_list?token={self.token}&qty={qty}&country={country}&state=&city=&time=5&format=json&protocol={protocol}&filter=1'
         if is_idc:
             url = f"{url}&type=datacenter"
 
@@ -77,7 +77,7 @@ class Luproxy(object):
             else:
                 print(colored(f"添加白名单成功, 消息: {resp_msg}", "green"))
 
-    def fetch_ok_proxy(self, country="", qty=10):
+    def fetch_ok_proxy(self, country="", protocol="http",  qty=10, is_idc=True):
         """获取可用代理IP列表
 
         Args:
@@ -87,7 +87,7 @@ class Luproxy(object):
         Returns:
             _type_: 是否正常返回(bool), 返回的IP列表(list), 返回IP对应真实出口IP列表(list)
         """
-        ok, proxy_data = self.get_proxy_ips(country=country, qty=qty)
+        ok, proxy_data = self.get_proxy_ips(country=country, protocol=protocol, qty=qty, is_idc=is_idc)
         if not ok:
             return False, [], []
 

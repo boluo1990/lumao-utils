@@ -7,14 +7,14 @@ from eth_account.messages import encode_defunct
 from . import config
 
 class Luweb3(Web3):
-    def __init__(self, http_provider=None, chain_id=None, chain_name=None) -> None:
+    def __init__(self, http_provider=None, chain_id=None, chain_name=None, request_kwargs={}) -> None:
         if http_provider is not None and chain_id is not None:
             self.chain_id = chain_id
             chain_name = f"链 {chain_id}"
         else:
             http_provider = config.chain_info[chain_name]["http_provider"]
             self.chain_id = config.chain_info[chain_name]["chain_id"]
-        self.w3 = Web3(HTTPProvider(http_provider))
+        self.w3 = Web3(HTTPProvider(http_provider, request_kwargs=request_kwargs))
         while self.w3.isConnected() is not True:
             self.w3 = Web3(HTTPProvider(http_provider))
             print(colored(f"{chain_name} RPC连接失败, 重试...", "yellow"))
