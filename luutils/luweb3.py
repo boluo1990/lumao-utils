@@ -2,7 +2,7 @@ import time
 from termcolor import colored
 from web3 import Web3, HTTPProvider, exceptions
 from web3.auto import w3 as _w3
-from eth_abi import encode_abi
+from eth_abi import encode as encode_abi
 from eth_account.messages import encode_defunct
 from . import config
 
@@ -16,7 +16,7 @@ class Luweb3(Web3):
             self.chain_id = config.chain_info[chain_name]["chain_id"]
         self.w3 = Web3(HTTPProvider(http_provider, request_kwargs=request_kwargs))
         connect_time = 0
-        while self.w3.isConnected() is not True:
+        while self.w3.is_connected() is not True:
             self.w3 = Web3(HTTPProvider(http_provider, request_kwargs=request_kwargs))
             print(colored(f"{chain_name} RPC连接失败, 重试...", "yellow"))
             time.sleep(1)
@@ -28,7 +28,7 @@ class Luweb3(Web3):
 
     @staticmethod
     def encode_abi_to_hex(types, args):
-        return Web3.toHex(encode_abi(types, args))[2:]
+        return Web3.to_hex(encode_abi(types, args))[2:]
 
     @staticmethod
     def encode_function(func_text):

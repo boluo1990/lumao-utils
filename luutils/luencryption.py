@@ -7,11 +7,11 @@ class Luencryption:
 
     @staticmethod
     def to_bytes(string):
-        return Web3.toBytes(text=string)
+        return Web3.to_bytes(text=string)
 
     @staticmethod
     def to_string(bytes):
-        return Web3.toText(bytes)
+        return Web3.to_text(bytes)
 
     def encrypt(self, to_encrypt_string):
         if isinstance(to_encrypt_string, str):
