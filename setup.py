@@ -18,7 +18,7 @@ _config = {
         "web3==6.1.0",
         "termcolor==1.1.0",
         "eth-account==0.8.0",
-        "cryptography==36.0.2",
+        "cryptography>=36.0.1",
         "requests==2.25.1"
     ]
 }
