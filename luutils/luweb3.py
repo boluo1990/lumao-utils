@@ -3,7 +3,7 @@ from termcolor import colored
 from web3 import Web3, HTTPProvider, exceptions, WebsocketProvider
 from web3.auto import w3 as _w3
 from eth_abi import encode as encode_abi
-from eth_account.messages import encode_defunct
+from eth_account.messages import encode_defunct, encode_structured_data
 from . import config
 
 class Luweb3(Web3):
@@ -54,6 +54,12 @@ class Luweb3(Web3):
     def sign_msg(private_key, msg_text):
         message = encode_defunct(text=msg_text)
         signed_message = _w3.eth.account.sign_message(message, private_key=private_key)
+        signature = signed_message["signature"].hex()
+        return signature
+
+    @staticmethod
+    def sign_eip712_msg(private_key, typed_msg):
+        signed_message = _w3.eth.account.sign_message(encode_structured_data(primitive=typed_msg), private_key=private_key)
         signature = signed_message["signature"].hex()
         return signature
 
@@ -155,6 +161,32 @@ class Luweb3(Web3):
             else:
                 print(colored(f'交易已确认, hash: {txn_hash.hex()}, 状态: {txn_detail["status"]}', "green"))
                 return txn_detail["status"], tx_data["nonce"], txn_detail
+
+    def send_raw_transaction_with_gas(
+        self, address, private_key, to_address, nonce, input_data="0x", value=0, tx_type=1,
+        price_mul=1, limit_mul=1, is_async=False, timeout=300, poll_latency=0.5):
+        gas_limit = self.get_estimate_gas(address, to_address, value=value, data=input_data)
+        if price_mul != 1:
+            return self.send_raw_transaction(
+                address, private_key, to_address, nonce, input_data=input_data, value=value,
+                gas_limit=int(gas_limit * limit_mul), is_async=is_async, timeout=timeout, poll_latency=poll_latency
+                )
+        else:
+            if tx_type == 1:
+                gas_option = {
+                    "gasPrice": int(price_mul * self.get_gas_price())
+                }
+            else:
+                base_fee = self.get_1559_base_fee()
+                priority_fee = self.get_max_priority_fee()
+                gas_option = {
+                    "maxFeePerGas": int((base_fee + priority_fee) * price_mul),
+                    "maxPriorityFeePerGas": int(priority_fee * price_mul),
+                }
+            return self.send_raw_transaction(
+                address, private_key, to_address, nonce, gas_option=gas_option, input_data=input_data, tx_type=tx_type,
+                value=value, gas_limit=int(gas_limit * limit_mul), is_async=is_async, timeout=timeout, poll_latency=poll_latency
+            )
 
     # 授权ERC-20代币
     def approve_erc20_token(
