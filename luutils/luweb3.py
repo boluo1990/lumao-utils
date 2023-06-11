@@ -168,7 +168,7 @@ class Luweb3(Web3):
         gas_limit = self.get_estimate_gas(address, to_address, value=value, data=input_data)
         if price_mul == 1:
             return self.send_raw_transaction(
-                address, private_key, to_address, nonce, input_data=input_data, value=value,
+                address, private_key, to_address, nonce, input_data=input_data, value=value, tx_type=tx_type,
                 gas_limit=int(gas_limit * limit_mul), is_async=is_async, timeout=timeout, poll_latency=poll_latency
                 )
         else:
