@@ -155,7 +155,11 @@ class Luweb3(Web3):
             print(colored(f'交易确认中, hash: {txn_hash.hex()}', "blue"))
             # status, txn_detail = self.__check_transaction(txn_hash, poll_latency, timeout)
             try:
-                txn_detail = self.w3.eth.wait_for_transaction_receipt(txn_hash, timeout=timeout, poll_latency=poll_latency)
+                while True:
+                    txn_detail = self.w3.eth.wait_for_transaction_receipt(txn_hash, timeout=timeout, poll_latency=poll_latency)
+                    if txn_detail["status"] != None:
+                        break
+                    time.sleep(5)
             except exceptions.BadResponseFormat:
                 time.sleep(poll_latency)
             else:
