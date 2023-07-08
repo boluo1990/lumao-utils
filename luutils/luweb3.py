@@ -79,6 +79,9 @@ class Luweb3(Web3):
     def get_nonce(self, address, estimate_nonce=0):
         return max(self.w3.eth.get_transaction_count(address), estimate_nonce)
 
+    def get_transaction_receipt(self, tx_hash):
+        return self.w3.eth.get_transaction_receipt(tx_hash)
+
     # 获取原生代币数量
     def get_eth_balance(self, address):
         return self.w3.eth.get_balance(address)
@@ -191,6 +194,27 @@ class Luweb3(Web3):
                 address, private_key, to_address, nonce, gas_option=gas_option, input_data=input_data, tx_type=tx_type,
                 value=value, gas_limit=int(gas_limit * limit_mul), is_async=is_async, timeout=timeout, poll_latency=poll_latency
             )
+
+    def send_raw_transaction_with_gas_loop(
+        self, address, private_key, to_address, nonce, input_data="0x", value=0, tx_type=1,
+        price_mul_start=1, price_mul_step=0.1, limit_mul=1, timeout=300, poll_latency=0.5, retries=5):
+        retry = 0
+        while retry < retries:
+            price_mul = price_mul_start + retry * price_mul_step 
+            try:
+                status, nonce, tx_detail = self.send_raw_transaction_with_gas(
+                    address, private_key, to_address, nonce, input_data, value, tx_type, price_mul,
+                    limit_mul, timeout=timeout, poll_latency=poll_latency
+                    )
+            except Exception as e:
+                if "is not in the chain after" in str(e) or "transaction underpriced" in str(e) or "ALREADY_EXISTS" in str(e):
+                    print(colored(f"{address} 交易未确认/GAS太低: {str(e)}", "yellow"))
+                    retry += 1
+                    continue
+                print(colored(f"{address} 交易报错: {str(e)}", "red"))
+                return 0, 0, {}
+            else:
+                return status, nonce, tx_detail
 
     # 授权ERC-20代币
     def approve_erc20_token(
