@@ -15,7 +15,7 @@ _config = {
     ],
     "python_requires": ">=3.7",
     "install_requires": [
-        "web3==6.1.0",
+        "web3>=6.0.0",
         "termcolor==1.1.0",
         "eth-account==0.8.0",
         "cryptography>=36.0.1",

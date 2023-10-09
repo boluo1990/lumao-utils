@@ -286,6 +286,14 @@ class Luweb3(Web3):
     def construct_contract(self, contract_addr, contract_abi):
         return self.w3.eth.contract(address=contract_addr, abi=contract_abi)
 
+    def deploy_contract(self, contract_abi, bytecode, addr, pk, constructor_args=()):
+        ctr = self.w3.eth.contract(abi=contract_abi, bytecode=bytecode)
+        construct_txn = ctr.constructor(*constructor_args).build_transaction({
+            "from": addr,
+            "nonce": self.get_nonce(addr)
+        })
+        return self.sign_send_transaction(pk, construct_txn)
+
     def sign_send_transaction(self, pk, txn_dict, is_async=False, timeout=300, poll_latency=0.5):
         signed_txn = self.w3.eth.account.sign_transaction(txn_dict, pk)
         txn_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
