@@ -286,13 +286,23 @@ class Luweb3(Web3):
     def construct_contract(self, contract_addr, contract_abi):
         return self.w3.eth.contract(address=contract_addr, abi=contract_abi)
 
-    def deploy_contract(self, contract_abi, bytecode, addr, pk, constructor_args=(), value=0):
+    def deploy_contract(self, contract_abi, bytecode, addr, pk, constructor_args=(), value=0, tx_type=1, gas_option={}):
         ctr = self.w3.eth.contract(abi=contract_abi, bytecode=bytecode)
-        construct_txn = ctr.constructor(*constructor_args).build_transaction({
+        tx_data = {
             "from": addr,
             "nonce": self.get_nonce(addr),
             "value": value
-        })
+        }
+        if not bool(gas_option):
+            if tx_type == 1:
+                tx_data["gasPrice"] = self.w3.eth.gas_price
+            else:
+                tx_data["maxFeePerGas"] = self.get_1559_base_fee() + self.get_max_priority_fee()
+                tx_data["maxPriorityFeePerGas"] = self.get_max_priority_fee()
+        else:
+            for k in gas_option:
+                tx_data[k] = gas_option[k]
+        construct_txn = ctr.constructor(*constructor_args).build_transaction(tx_data)
         return self.sign_send_transaction(pk, construct_txn)
 
     def sign_send_transaction(self, pk, txn_dict, is_async=False, timeout=300, poll_latency=0.5):
