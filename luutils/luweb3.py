@@ -7,7 +7,9 @@ from eth_account.messages import encode_defunct, encode_structured_data
 from . import config
 
 class Luweb3(Web3):
-    def __init__(self, http_provider=None, ws_provider=None, chain_id=None, chain_name=None, connect_timeout=10, request_kwargs={}, websocket_kwargs={}) -> None:
+    def __init__(self, http_provider=None, ws_provider=None, chain_id=None,
+                 chain_name=None, connect_timeout=10, request_kwargs={},
+                 websocket_kwargs={}, check_connected=True) -> None:
         if (http_provider or ws_provider) and chain_id is not None:
             self.chain_id = chain_id
             chain_name = f"链 {chain_id}"
@@ -21,6 +23,9 @@ class Luweb3(Web3):
                 self.w3 = Web3(WebsocketProvider(ws_provider, websocket_kwargs=websocket_kwargs))
             else:
                 self.w3 = Web3(HTTPProvider(http_provider, request_kwargs=request_kwargs))
+
+            if not check_connected:
+                break
 
             if self.w3.is_connected() is True:
                 break

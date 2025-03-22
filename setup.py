@@ -19,7 +19,9 @@ _config = {
         "termcolor==1.1.0",
         "eth-account==0.8.0",
         "cryptography>=36.0.1",
-        "requests==2.25.1"
+        "requests==2.25.1",
+        "solana>=0.31.0",
+        "solders>=0.19.0",
     ]
 }
 
